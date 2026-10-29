@@ -68,6 +68,9 @@ export class TrpgReplayElement extends HTMLElement {
   goToScene(index: number) { this.player?.jumpToScene(index) }
   seek(seq: number) { this.player?.seek(seq) }
 
+  /** 当前展示到的事件 seq。 */
+  get currentSeq() { return this.player?.currentSeq ?? 0 }
+
   /* -------------------------------------------------------- 内部 */
 
   private boolAttr(name: string) {

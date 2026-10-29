@@ -54,10 +54,14 @@ demo 页支持几个调试参数：
 | `?god=1` | 默认打开上帝视角（显示暗骰与 OOC） |
 | `?speed=2` | 2 倍速 |
 
-无头截图（需要本机 Chrome）：
+本地自查工具（都需要本机 Chrome）：
 
 ```bash
+# 截图 + 导出 Shadow DOM，用来核对某一帧的排版
 node tools/snapshot.mjs --url "?seq=69" --wait 1500 --out .tmp/check.png
+
+# 交互回归：连点「下一句」是否每次只前进一条、打字时文本是否抖动
+node tools/click-test.mjs
 ```
 
 ## 嵌入博客

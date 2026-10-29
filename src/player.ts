@@ -164,6 +164,11 @@ export class Player {
     if (this.i >= this.visible.length) this.i = 0
     void this.run(this.i)
   }
+
+  /** 当前正在展示的事件序号（调试 / 深链用）。 */
+  get currentSeq() {
+    return this.visible[this.i]?.seq ?? 0
+  }
   pause() {
     this.playing = false
     this.gen++
@@ -173,8 +178,8 @@ export class Player {
     this.syncPlayBtn()
   }
   toggle() { this.playing ? this.pause() : this.play() }
-  next() { this.pause(); this.i = Math.min(this.i + 1, this.visible.length - 1); this.presentAt(this.i) }
-  prev() { this.pause(); this.i = Math.max(this.i - 1, 0); this.presentAt(this.i) }
+  next() { this.pause(); this.presentIndex(Math.min(this.i + 1, this.visible.length - 1)) }
+  prev() { this.pause(); this.presentIndex(Math.max(this.i - 1, 0)) }
 
   setGod(on: boolean) {
     if (this.god === on) return
@@ -182,9 +187,8 @@ export class Player {
     this.god = on
     this.rebuildVisible()
     const idx = this.visible.findIndex((e) => e.seq >= anchorSeq)
-    this.i = idx < 0 ? this.visible.length - 1 : idx
     this.pause()
-    this.presentAt(this.i)
+    this.presentIndex(idx < 0 ? this.visible.length - 1 : idx)
     this.syncButtons()
   }
 
@@ -198,15 +202,13 @@ export class Player {
     const target = this.visible.findIndex((e) => e.scene === index)
     if (target < 0) return
     this.showScene(index, false)
-    this.i = target
-    this.presentAt(target)
+    this.presentIndex(target)
   }
 
   seek(seq: number) {
     this.pause()
     const idx = this.visible.findIndex((e) => e.seq >= seq)
-    this.i = idx < 0 ? this.visible.length - 1 : idx
-    this.presentAt(this.i)
+    this.presentIndex(idx < 0 ? this.visible.length - 1 : idx)
   }
 
   /* ------------------------------------------------------------ 播放循环 */
@@ -219,16 +221,19 @@ export class Player {
   }
 
   private async run(startIndex: number) {
-    const g = ++this.gen
-    this.i = Math.max(0, Math.min(startIndex, this.visible.length - 1))
     this.playing = true
     this.syncPlayBtn()
+    let idx = Math.max(0, Math.min(startIndex, this.visible.length - 1))
+    this.i = idx
 
-    while (this.i < this.visible.length) {
-      const ev = this.visible[this.i]
-      await this.present(ev, g)
+    while (idx < this.visible.length) {
+      const g = ++this.gen
+      this.i = idx
+      this.updateProgress()
+      await this.present(this.visible[idx], g)
       if (g !== this.gen || !this.playing) return
-      this.i++
+      idx++
+      this.i = idx
       this.updateProgress()
     }
     this.playing = false
@@ -236,14 +241,17 @@ export class Player {
     this.showEnd()
   }
 
-  private async presentAt(index: number) {
+  /**
+   * 渲染单条并停住。索引**同步**落到 this.i，避免上一次渲染还在 await 时
+   * 连点「下一句」算出同一个目标（表现为点两次才前进一条）。
+   */
+  private presentIndex(index: number) {
+    if (!this.visible.length) return
+    const target = Math.max(0, Math.min(index, this.visible.length - 1))
     const g = ++this.gen
-    const ev = this.visible[index]
-    if (!ev) return
+    this.i = target
     this.updateProgress()
-    await this.present(ev, g)
-    this.i = index
-    if (g === this.gen && this.playing) this.i++
+    void this.present(this.visible[target], g)
   }
 
   private async present(ev: ReplayEvent, g: number) {
@@ -308,15 +316,12 @@ export class Player {
       return
     }
 
-    const typed = el('span', '')
-    node.append(typed)
-    await this.type(typed, ev.text, g)
     if (ev.audience?.length) {
       const tag = el('span', 'private-tag')
       tag.textContent = '仅 ' + ev.audience.map((id) => this.nameOf(id)).join(' / ') + ' 可闻'
-      node.style.position = 'relative'
       node.append(tag)
     }
+    await this.typeInto(node, ev.text, g)
     await this.hold(ev, g)
   }
 
@@ -325,7 +330,7 @@ export class Player {
     this.highlight(ev.speaker)
     const node = el('div', 'action')
     this.bodyEl.replaceChildren(node)
-    await this.type(node, ev.text, g)
+    await this.typeInto(node, ev.text, g)
     await this.hold(ev, g)
   }
 
@@ -352,7 +357,7 @@ export class Player {
     const text = el('div', 'bubble-text')
     bubble.append(name, text)
     this.bodyEl.replaceChildren(bubble)
-    await this.type(text, ev.text, g)
+    await this.typeInto(text, ev.text, g)
     await this.hold(ev, g)
   }
 
@@ -627,8 +632,7 @@ export class Player {
       const ratio = (e.clientX - r.left) / r.width
       const idx = Math.round(ratio * (this.visible.length - 1))
       this.pause()
-      this.i = Math.max(0, Math.min(idx, this.visible.length - 1))
-      this.presentAt(this.i)
+      this.presentIndex(Math.max(0, Math.min(idx, this.visible.length - 1)))
     })
 
     this.chapterMenu = el('div', 'chapters')
@@ -704,24 +708,37 @@ export class Player {
     this.stage.style.setProperty('--scale', String(this.scale))
   }
 
-  private type(el: HTMLElement, text: string, g: number): Promise<void> {
-    return (async () => {
-      const cps = Math.max(10, 34 * this.speed)
-      const step = Math.max(1, Math.round(cps / 50))
-      const caret = document.createElement('i')
-      caret.className = 'caret'
-      el.replaceChildren(caret)
-      let i = 0
-      while (i < text.length) {
-        if (!this.alive(g)) return
-        i = Math.min(text.length, i + step)
-        el.textContent = text.slice(0, i)
-        el.append(caret)
-        await this.sleep((1000 / cps) * step, g)
-      }
-      caret.remove()
-      el.textContent = text
-    })()
+  /**
+   * 打字机。先把完整文本放进一个不可见的 ghost 里排好版，占住最终高度；
+   * 可见文本绝对定位叠在它上面逐字显现。
+   *
+   * 这样换行时整段文字不会往上跳——否则每多一行，底部对齐的旁白就会
+   * 整体位移一次，看起来像画面在抖。
+   */
+  private async typeInto(container: HTMLElement, text: string, g: number): Promise<void> {
+    const ghost = document.createElement('span')
+    ghost.className = 'ghost'
+    ghost.setAttribute('aria-hidden', 'true')
+    ghost.textContent = text || ' '
+    const typed = document.createElement('span')
+    typed.className = 'typed'
+    const caret = document.createElement('i')
+    caret.className = 'caret'
+    typed.append(caret)
+    container.append(ghost, typed)
+
+    const cps = Math.max(10, 34 * this.speed)
+    const step = Math.max(1, Math.round(cps / 50))
+    let i = 0
+    while (i < text.length) {
+      if (!this.alive(g)) return
+      i = Math.min(text.length, i + step)
+      typed.textContent = text.slice(0, i)
+      typed.append(caret)
+      await this.sleep((1000 / cps) * step, g)
+    }
+    caret.remove()
+    typed.textContent = text
   }
 
   private async hold(ev: ReplayEvent, g: number) {
@@ -732,10 +749,25 @@ export class Player {
 
   private sleep(ms: number, g: number): Promise<void> {
     return new Promise<void>((resolve) => {
+      // 释放上一个等待者，避免被打断的 present 永久挂着
+      const prev = this.wake
+      this.wake = null
+      if (this.timer) { clearTimeout(this.timer); this.timer = null }
+      prev?.()
+
       if (!this.alive(g)) { resolve(); return }
-      if (this.timer) clearTimeout(this.timer)
-      this.wake = () => { if (this.timer) { clearTimeout(this.timer); this.timer = null } resolve() }
-      this.timer = window.setTimeout(() => { this.timer = null; resolve() }, Math.max(0, ms))
+      this.wake = () => {
+        const t = this.timer
+        this.timer = null
+        this.wake = null
+        if (t) clearTimeout(t)
+        resolve()
+      }
+      this.timer = window.setTimeout(() => {
+        this.timer = null
+        this.wake = null
+        resolve()
+      }, Math.max(0, ms))
     })
   }
 

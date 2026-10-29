@@ -177,6 +177,7 @@ export const STYLE = /* css */ `
 
 /* 旁白 */
 .narration {
+  position: relative;
   align-self: center;
   max-width: 880px;
   margin-bottom: 168px;
@@ -186,9 +187,10 @@ export const STYLE = /* css */ `
   line-height: 1.95;
   color: var(--ink);
   text-align: center;
+  white-space: pre-wrap;
   text-shadow: 0 2px 24px rgba(0,0,0,.85), 0 0 60px rgba(0,0,0,.6);
   letter-spacing: .02em;
-  animation: rise 620ms cubic-bezier(.2,.8,.2,1) both;
+  animation: fade 520ms ease both;
 }
 .narration .seg { display: block; margin: 4px 0; }
 .narration .seg i {
@@ -202,6 +204,7 @@ export const STYLE = /* css */ `
 
 /* 行动描写 */
 .action {
+  position: relative;
   align-self: center;
   max-width: 820px;
   margin-bottom: 172px;
@@ -211,9 +214,10 @@ export const STYLE = /* css */ `
   line-height: 1.85;
   color: #c3cddb;
   text-align: center;
+  white-space: pre-wrap;
   font-style: italic;
   text-shadow: 0 2px 20px rgba(0,0,0,.9);
-  animation: rise 520ms cubic-bezier(.2,.8,.2,1) both;
+  animation: fade 460ms ease both;
 }
 
 /* 对话 / 心声 */
@@ -253,12 +257,25 @@ export const STYLE = /* css */ `
   font-family: var(--sans);
 }
 .bubble-text {
+  position: relative;
   font-family: var(--serif);
   font-size: 25px;
   line-height: 1.85;
   color: var(--ink);
   letter-spacing: .01em;
+  white-space: pre-wrap;
   min-height: 1.85em;
+}
+
+/* 打字机排版锚点：ghost 先把最终文本排好占位，typed 绝对定位叠上去逐字显现。
+   没有它的话，每换一行整段文字都会往上跳一次。 */
+.ghost {
+  display: block;
+  visibility: hidden;
+}
+.typed {
+  position: absolute;
+  inset: 0;
 }
 .bubble-text .caret {
   display: inline-block;
