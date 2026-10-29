@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>北海九号 · 一次跑团记录的重排</title>
+    <style>
+      :root {
+        --field: #ffffff;
+        --field-soft: #f7f9fd;
+        --ink: #17324d;
+        --muted: #6d8095;
+        --faint: #9aa8b7;
+        --blue: #55afe8;
+        --line: rgba(85, 175, 232, 0.28);
+        --line-soft: rgba(85, 175, 232, 0.14);
+        --gutter: clamp(22px, 6vw, 96px);
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--field);
+        color: var(--ink);
+        font-family: "Inter Variable", Inter, "Noto Sans SC", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+        font-size: 18px;
+        line-height: 1.9;
+        -webkit-font-smoothing: antialiased;
+      }
+      .site {
+        display: flex; align-items: baseline; gap: 14px;
+        padding: 28px var(--gutter);
+        border-bottom: 1px solid var(--line-soft);
+        font-size: 13px; letter-spacing: .22em; color: var(--muted);
+        text-transform: uppercase;
+      }
+      .site b { color: var(--ink); font-weight: 600; letter-spacing: .32em; }
+      .site .dot { color: var(--blue); }
+
+      .post { max-width: 760px; margin: 0 auto; padding: 64px var(--gutter) 120px; }
+      .kicker { font-size: 12px; letter-spacing: .3em; color: var(--blue); margin-bottom: 18px; }
+      h1 { font-size: 40px; line-height: 1.3; letter-spacing: -.01em; margin: 0 0 18px; font-weight: 650; }
+      .meta { font-size: 13px; color: var(--faint); letter-spacing: .06em; margin-bottom: 46px; }
+      .meta span + span::before { content: " · "; margin: 0 6px; color: var(--line); }
+
+      .post p { margin: 0 0 1.5em; }
+      .post h2 { font-size: 22px; margin: 2.4em 0 .8em; letter-spacing: .02em; }
+      .post h2::before { content: ""; display: block; width: 34px; height: 2px; background: var(--blue); margin-bottom: 18px; opacity: .55; }
+      .post em { font-style: normal; color: var(--muted); }
+      .post strong { font-weight: 650; }
+      .post blockquote {
+        margin: 1.8em 0; padding: 2px 0 2px 20px;
+        border-left: 2px solid var(--line); color: var(--muted);
+      }
+      .post code {
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: .88em; background: var(--field-soft);
+        padding: .15em .45em; border-radius: 4px; color: #35506e;
+      }
+
+      /* ---- 播放器块：像视频一样默认比正文宽，可全屏 ---- */
+      .replay-block {
+        position: relative;
+        width: min(1120px, calc(100vw - 48px));
+        margin: 2.6em 50% 3em;
+        transform: translateX(-50%);
+        transition: width 420ms cubic-bezier(.2,.8,.2,1);
+      }
+      .replay-block.reading {
+        width: 100%;
+        margin-left: 0;
+        transform: none;
+      }
+      .replay-toolbar {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; margin-bottom: 10px;
+        font-size: 12px; letter-spacing: .16em; color: var(--faint);
+      }
+      .replay-toolbar .group { display: flex; gap: 8px; }
+      .replay-toolbar button {
+        appearance: none; border: 1px solid var(--line); background: transparent;
+        color: var(--muted); border-radius: 999px; padding: 4px 12px;
+        font: inherit; font-size: 11px; letter-spacing: .12em; cursor: pointer;
+        transition: border-color .2s ease, color .2s ease;
+      }
+      .replay-toolbar button:hover { border-color: var(--blue); color: var(--blue); }
+      .replay-skeleton {
+        aspect-ratio: 16/9; border-radius: 10px;
+        background: linear-gradient(120deg, #0a1018 0%, #121c28 40%, #0a1018 80%);
+        background-size: 220% 100%;
+        animation: shimmer 1.4s linear infinite;
+        display: grid; place-items: center;
+        color: rgba(232,236,242,.35); font-size: 12px; letter-spacing: .3em;
+      }
+      @keyframes shimmer { from { background-position: 120% 0 } to { background-position: -60% 0 } }
+
+      /* 视频式的封面 / 播放按钮 */
+      .replay-stage { position: relative; }
+      .replay-poster {
+        position: absolute; inset: 0; z-index: 2;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 18px; cursor: pointer; border-radius: 10px; overflow: hidden;
+        background: radial-gradient(ellipse at 50% 45%, rgba(4,7,11,.28) 0%, rgba(4,7,11,.72) 100%);
+        transition: opacity 420ms ease;
+      }
+      .replay-poster.hide { opacity: 0; pointer-events: none; }
+      .replay-poster .disc {
+        width: 76px; height: 76px; border-radius: 50%;
+        display: grid; place-items: center;
+        background: rgba(255,255,255,.12);
+        border: 1px solid rgba(255,255,255,.42);
+        backdrop-filter: blur(6px);
+        transition: transform .25s ease, background .25s ease;
+      }
+      .replay-poster:hover .disc { transform: scale(1.08); background: rgba(255,255,255,.2); }
+      .replay-poster .disc::after {
+        content: ""; display: block; margin-left: 5px;
+        border-left: 20px solid #fff;
+        border-top: 12px solid transparent;
+        border-bottom: 12px solid transparent;
+      }
+      .replay-poster .label {
+        font-size: 12px; letter-spacing: .42em; color: rgba(255,255,255,.78);
+        text-transform: uppercase;
+      }
+
+      .caption { margin-top: 12px; font-size: 13px; color: var(--faint); text-align: center; letter-spacing: .04em; }
+
+      @media (max-width: 640px) {
+        body { font-size: 17px; }
+        h1 { font-size: 30px; }
+        .post { padding-top: 40px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="site"><b>MAPLE</b><span class="dot">/</span><span>notes</span></div>
+
+    <article class="post" id="post"></article>
+
+    <script type="module" src="/demo/blog.js"></script>
+  </body>
+</html>

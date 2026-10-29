@@ -148,6 +148,14 @@ export class Player {
     this.frame.addEventListener('fullscreenchange', () => this.fit())
 
     if (this.options.autoplay) setTimeout(() => this.run(0), 400)
+    else {
+      // 不自动播放时给一个"海报帧"：场景卡之后停在第条正文上，避免嵌在文章里是一片空白
+      setTimeout(() => {
+        if (this.playing) return
+        const idx = this.visible.findIndex((e) => e.type !== 'marker')
+        this.presentIndex(idx < 0 ? 0 : idx)
+      }, Math.min(2600, 1200 + 1200))
+    }
   }
 
   destroy() {
@@ -824,6 +832,9 @@ export class Player {
     if (!r.width) return
     this.scale = Math.min(r.width / 1280, r.height / 720)
     this.stage.style.setProperty('--scale', String(this.scale))
+    // 窄栏（比如嵌在博客正文里）时按比例放大舞台内的字号，保证落到屏幕上仍是可读大小
+    const f = Math.min(1.55, Math.max(1, 0.62 / this.scale))
+    this.stage.style.setProperty('--f', f.toFixed(3))
   }
 
   /**

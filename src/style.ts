@@ -195,7 +195,7 @@ export const STYLE = /* css */ `
   margin-bottom: 150px;
   padding: 0 40px;
   font-family: var(--serif);
-  font-size: 24px;
+  font-size: calc(24px * var(--f, 1));
   line-height: 1.9;
   color: var(--ink);
   text-align: center;
@@ -240,7 +240,7 @@ export const STYLE = /* css */ `
   margin-bottom: 156px;
   padding: 0 40px;
   font-family: var(--serif);
-  font-size: 20px;
+  font-size: calc(20px * var(--f, 1));
   line-height: 1.85;
   color: #c3cddb;
   text-align: center;
@@ -275,7 +275,7 @@ export const STYLE = /* css */ `
   align-items: baseline;
   gap: 10px;
   font-family: var(--serif);
-  font-size: 17px;
+  font-size: calc(17px * var(--f, 1));
   letter-spacing: .12em;
   margin-bottom: 10px;
 }
@@ -289,7 +289,7 @@ export const STYLE = /* css */ `
 .bubble-text {
   position: relative;
   font-family: var(--serif);
-  font-size: 21px;
+  font-size: calc(21px * var(--f, 1));
   line-height: 1.8;
   color: var(--ink);
   letter-spacing: .01em;
@@ -373,7 +373,7 @@ export const STYLE = /* css */ `
 }
 .check-skill {
   font-family: var(--serif);
-  font-size: 19px;
+  font-size: calc(19px * var(--f, 1));
   letter-spacing: .16em;
   color: var(--ink);
   margin-bottom: 4px;
@@ -381,7 +381,7 @@ export const STYLE = /* css */ `
 .check-target { font-size: 12px; color: rgba(232,236,242,.42); letter-spacing: .2em; margin-bottom: 14px; }
 .check-dice {
   font-family: "Inter", var(--sans);
-  font-size: 62px;
+  font-size: calc(62px * var(--f, 1));
   font-weight: 200;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -441,7 +441,7 @@ export const STYLE = /* css */ `
 }
 .scene-label {
   font-family: var(--serif);
-  font-size: 34px;
+  font-size: calc(34px * var(--f, 1));
   letter-spacing: .16em;
   color: var(--ink);
 }
