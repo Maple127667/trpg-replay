@@ -7,8 +7,8 @@
     "3": "/art/bg/scene-04-server-room.jpg"
   },
   "characters": {
-    "liangyan": { "default": "/art/char/liangyan-neutral.png", "scale": 0.72, "y": 40 },
-    "wenkele":  { "default": "/art/char/wenkele-neutral.png",  "scale": 0.5, "y": 55 },
+    "liangyan": { "default": "/art/char/liangyan-neutral.png", "scale": 0.62 },
+    "wenkele":  { "default": "/art/char/wenkele-neutral.png", "scale": 0.67 },
     "sisyphus": { "default": "/art/char/sisyphus-neutral.png" },
     "jessica":  { "default": "/art/char/jessica-neutral.png" },
     "angelo":   { "default": "/art/char/angelo-neutral.png" }
