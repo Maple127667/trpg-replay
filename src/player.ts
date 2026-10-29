@@ -89,6 +89,7 @@ export class Player {
   private onStage: string[] = []
   private lastSpoke = new Map<string, number>()
   private speakTick = 0
+  private presentedScene = -1
   private currentScene = -1
   private scale = 1
 
@@ -269,6 +270,7 @@ export class Player {
       picked.unshift(e.speaker)
     }
     this.castEl.replaceChildren()
+    this.presentedScene = scene
     this.onStage = [...picked]
     this.lastSpoke.clear()
     for (const id of picked) {
@@ -284,6 +286,7 @@ export class Player {
 
   private async present(ev: ReplayEvent, g: number) {
     this.ensureScene(ev.scene)
+    this.syncPresence(ev)
     if (ev.type === 'narration' || ev.type === 'action' || ev.type === 'dialogue' || ev.type === 'thought' || ev.type === 'unknown') {
       this.overlay.replaceChildren()
     }
@@ -549,6 +552,46 @@ export class Player {
 
   /* ------------------------------------------------------------ 立绘 */
 
+  /**
+   * 上下场管理：
+   *   - 换场时上一场的人全部退场，新场次由第一个开口的人重新引入
+   *   - 剧情退场点（死亡、离场）到了就下场，否则尸体会一直挂在台上
+   */
+  private syncPresence(ev: ReplayEvent) {
+    if (ev.scene !== this.presentedScene) {
+      this.presentedScene = ev.scene
+      this.clearCast()
+    }
+    for (const [id, seq] of Object.entries(this.doc.exits ?? {})) {
+      if (ev.seq >= seq && this.onStage.includes(id)) this.removeCast(id)
+    }
+  }
+
+  private clearCast() {
+    for (const node of Array.from(this.castEl.children)) {
+      node.classList.remove('show', 'active')
+    }
+    const kids = Array.from(this.castEl.children)
+    setTimeout(() => {
+      for (const n of kids) if (!n.classList.contains('show')) n.remove()
+    }, 460)
+    this.onStage = []
+    this.lastSpoke.clear()
+    this.stage.classList.toggle('has-cast', false)
+  }
+
+  private removeCast(id: string) {
+    const node = this.castEl.querySelector<HTMLElement>(`.char[data-id="${id}"]`)
+    this.onStage = this.onStage.filter((x) => x !== id)
+    this.lastSpoke.delete(id)
+    if (node) {
+      node.classList.remove('show', 'active')
+      setTimeout(() => node.remove(), 460)
+    }
+    this.layoutCast()
+    this.stage.classList.toggle('has-cast', this.onStage.length > 0)
+  }
+
   private dimCast(dim: boolean) {
     for (const node of Array.from(this.castEl.children)) {
       node.classList.toggle('active', !dim)
@@ -594,6 +637,7 @@ export class Player {
       node.style.setProperty('--x', `${xs[i] ?? 50}%`)
       node.style.zIndex = String(10 + i)
     })
+    this.stage.classList.toggle('has-cast', n > 0)
   }
 
   private spawnChar(id: string): HTMLElement {
@@ -620,7 +664,6 @@ export class Player {
       node.append(ph)
     }
     this.castEl.append(node)
-    this.stage.classList.add('has-cast')
     requestAnimationFrame(() => node.classList.add('show'))
     return node
   }

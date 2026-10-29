@@ -54,6 +54,12 @@ LEVEL_RANK = {
     "普通成功": 2, "成功": 2, "失败": 1, "大失败": 0,
 }
 
+# 角色退场点：到达该 seq 后立绘下场。
+# 西西弗斯 seq 63 惨叫、65 尸体坠落到甲板，之后不再有台词，视为死亡退场。
+EXITS = {
+    "sisyphus": 65,
+}
+
 RE_SAN = re.compile(r"^(?P<name>.+?)\s+理智检定\s+(?P<roll>\d+)/(?P<target>\d+)\s*=>\s*(?P<level>\S+)$")
 RE_SKILL = re.compile(
     r"^(?P<name>.+?)\s+检定了\s*(?P<skill>.+?)，出目/检定:\s*"
@@ -321,6 +327,7 @@ def main() -> None:
         "cast": [c for c in cast.values() if c["count"]],
         "scenes": scenes,
         "events": events,
+        "exits": EXITS,
         "anomalies": {
             "dropped": dropped,
             "narrationAttribution": anomalies,

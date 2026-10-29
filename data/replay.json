@@ -3567,6 +3567,9 @@
       "scene": 3
     }
   ],
+  "exits": {
+    "sisyphus": 65
+  },
   "anomalies": {
     "dropped": [
       {

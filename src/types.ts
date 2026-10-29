@@ -94,6 +94,8 @@ export interface ReplayDoc {
   cast: CastMember[]
   scenes: Scene[]
   events: ReplayEvent[]
+  /** 角色退场点：id -> seq，到达该条后立绘下场（死亡、离场等）。 */
+  exits?: Record<string, number>
   anomalies?: Record<string, unknown>
 }
 
