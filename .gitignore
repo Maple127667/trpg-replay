@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node / 播放器构建产物
+node_modules/
+dist/
+.vite/
+
+# 本地临时文件
+.tools/
+*.log
+Thumbs.db
+desktop.ini
