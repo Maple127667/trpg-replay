@@ -48,6 +48,8 @@ export interface ReplayEvent {
   channel?: string
   subtype?: string
   segments?: Array<{ where: string; what: string }>
+  /** 蒙太奇段落前的引导句（不属于任何地点分行的那部分）。 */
+  lead?: string
   check?: CheckData
   visibleToPlayers?: boolean
   note?: string

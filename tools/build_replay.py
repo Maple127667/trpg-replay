@@ -170,10 +170,18 @@ def parse_body(raw: str, rtype: str) -> dict:
         meta["channel"] = "radio"
 
     # 蒙太奇：一段旁白里并列多个地点（seq 230 那种）
-    segs = [m.groupdict() for line in text.split("\n") if (m := RE_MONTAGE.match(line.strip()))]
+    lines = text.split("\n")
+    segs = [m.groupdict() for line in lines if (m := RE_MONTAGE.match(line.strip()))]
     if len(segs) >= 2:
         meta["subtype"] = "montage"
         meta["segments"] = [{"where": g["where"], "what": g["what"]} for g in segs]
+        # 第一段地点分行之前的正文不属于任何地点，单独保留，别丢掉
+        first = next(
+            i for i, line in enumerate(lines) if RE_MONTAGE.match(line.strip())
+        )
+        lead = "\n".join(lines[:first]).strip()
+        if lead:
+            meta["lead"] = lead
 
     return {"text": text, **meta}
 

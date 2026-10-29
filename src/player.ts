@@ -303,16 +303,28 @@ export class Player {
     this.bodyEl.replaceChildren(node)
 
     if (ev.segments?.length) {
+      // 蒙太奇段落：所有行先排好（透明），再逐行点亮，避免底部对齐的段落往上顶
+      const lines: HTMLElement[] = []
+      if (ev.lead) {
+        const lead = el('span', 'seg lead')
+        lead.textContent = ev.lead
+        node.append(lead)
+        lines.push(lead)
+      }
       for (const seg of ev.segments) {
         const line = el('span', 'seg')
         const tag = el('i', '')
         tag.textContent = seg.where
         line.append(tag, document.createTextNode(seg.what))
         node.append(line)
-        if (!this.alive(g)) return
-        await this.sleep(260 / this.speed, g)
+        lines.push(line)
       }
-      await this.sleep(ev.ms * 0.5 / this.speed, g)
+      for (const line of lines) {
+        if (!this.alive(g)) return
+        line.classList.add('on')
+        await this.sleep(320 / this.speed, g)
+      }
+      await this.sleep(ev.ms * 0.45 / this.speed, g)
       return
     }
 

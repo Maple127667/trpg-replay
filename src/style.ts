@@ -97,9 +97,9 @@ export const STYLE = /* css */ `
 .char img { max-height: 100%; max-width: 100%; object-fit: contain; }
 
 .char .ph {
-  width: 320px;
-  height: 440px;
-  padding-top: 96px;
+  width: 300px;
+  height: 430px;
+  padding-top: 74px;
   border-radius: 160px 160px 24px 24px;
   display: flex;
   flex-direction: column;
@@ -117,7 +117,7 @@ export const STYLE = /* css */ `
   color: rgba(255,255,255,.86);
   letter-spacing: 2px;
 }
-.char .ph span { font-size: 13px; color: rgba(255,255,255,.42); letter-spacing: .28em; }
+.char .ph span { display: none; }
 
 /* ---------------------------------------------------------------- HUD */
 .hud {
@@ -179,12 +179,12 @@ export const STYLE = /* css */ `
 .narration {
   position: relative;
   align-self: center;
-  max-width: 880px;
-  margin-bottom: 168px;
+  max-width: 920px;
+  margin-bottom: 150px;
   padding: 0 40px;
   font-family: var(--serif);
-  font-size: 29px;
-  line-height: 1.95;
+  font-size: 24px;
+  line-height: 1.9;
   color: var(--ink);
   text-align: center;
   white-space: pre-wrap;
@@ -192,7 +192,14 @@ export const STYLE = /* css */ `
   letter-spacing: .02em;
   animation: fade 520ms ease both;
 }
-.narration .seg { display: block; margin: 4px 0; }
+.narration .seg {
+  display: block;
+  margin: 4px 0;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.narration .seg.on { opacity: 1; }
+.narration .seg.lead { color: #dfe6f0; }
 .narration .seg i {
   font-style: normal;
   color: var(--accent);
@@ -206,11 +213,11 @@ export const STYLE = /* css */ `
 .action {
   position: relative;
   align-self: center;
-  max-width: 820px;
-  margin-bottom: 172px;
+  max-width: 860px;
+  margin-bottom: 156px;
   padding: 0 40px;
   font-family: var(--serif);
-  font-size: 23px;
+  font-size: 20px;
   line-height: 1.85;
   color: #c3cddb;
   text-align: center;
@@ -223,7 +230,7 @@ export const STYLE = /* css */ `
 /* 对话 / 心声 */
 .bubble {
   position: relative;
-  margin: 0 74px 66px;
+  margin: 0 66px 58px;
   padding: 22px 34px 26px;
   border-radius: 14px;
   background: linear-gradient(180deg, rgba(14,18,25,.90), rgba(9,12,17,.95));
@@ -245,7 +252,7 @@ export const STYLE = /* css */ `
   align-items: baseline;
   gap: 10px;
   font-family: var(--serif);
-  font-size: 20px;
+  font-size: 17px;
   letter-spacing: .12em;
   margin-bottom: 10px;
 }
@@ -259,8 +266,8 @@ export const STYLE = /* css */ `
 .bubble-text {
   position: relative;
   font-family: var(--serif);
-  font-size: 25px;
-  line-height: 1.85;
+  font-size: 21px;
+  line-height: 1.8;
   color: var(--ink);
   letter-spacing: .01em;
   white-space: pre-wrap;
@@ -343,7 +350,7 @@ export const STYLE = /* css */ `
 }
 .check-skill {
   font-family: var(--serif);
-  font-size: 22px;
+  font-size: 19px;
   letter-spacing: .16em;
   color: var(--ink);
   margin-bottom: 4px;
@@ -351,7 +358,7 @@ export const STYLE = /* css */ `
 .check-target { font-size: 12px; color: rgba(232,236,242,.42); letter-spacing: .2em; margin-bottom: 14px; }
 .check-dice {
   font-family: "Inter", var(--sans);
-  font-size: 76px;
+  font-size: 62px;
   font-weight: 200;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -411,7 +418,7 @@ export const STYLE = /* css */ `
 }
 .scene-label {
   font-family: var(--serif);
-  font-size: 40px;
+  font-size: 34px;
   letter-spacing: .16em;
   color: var(--ink);
 }
