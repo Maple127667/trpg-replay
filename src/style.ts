@@ -267,18 +267,17 @@ export const STYLE = /* css */ `
   min-height: 1.85em;
 }
 
-/* 打字机排版锚点：ghost 先把最终文本排好占位，typed 叠在同一个网格单元里逐字显现。
-   两者必须共用同一个内容盒——所以用 grid 叠放，不能用绝对定位：绝对定位贴的是
-   padding 边，会吃掉容器的左右内边距，行宽一变换行点就变，打完整段会重排跳动。 */
-.textbox {
-  display: grid;
+/* 逐字显现：所有字从第一帧就参与排版，只切换透明度。
+   这样行宽、断行、居中位置全程不变——不会出现"边打边重新居中"的横向漂移。 */
+.reveal {
+  display: block;
 }
-.textbox > * {
-  grid-area: 1 / 1;
-  min-width: 0;
+.ch {
+  opacity: 0;
+  transition: opacity 120ms linear;
 }
-.ghost {
-  visibility: hidden;
+.ch.on {
+  opacity: 1;
 }
 .bubble-text .caret {
   display: inline-block;

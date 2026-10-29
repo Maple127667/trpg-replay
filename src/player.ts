@@ -709,42 +709,36 @@ export class Player {
   }
 
   /**
-   * 打字机。先把完整文本放进一个不可见的 ghost 里排好版，占住最终高度；
-   * 可见文本绝对定位叠在它上面逐字显现。
+   * 逐字显现：**先把整段文字全部排好版**，每个字先透明，再按顺序点亮。
    *
-   * 这样换行时整段文字不会往上跳——否则每多一行，底部对齐的旁白就会
-   * 整体位移一次，看起来像画面在抖。
+   * 关键点是"不追加文本"。如果边打边加字，居中的那一行每多一个字就要重新
+   * 居中一次，整行会持续往左挪半个字宽——那不是渲染瑕疵，是排版真的在变。
+   * 让所有字从第一帧就占好位置，布局就从头到尾恒定，只有透明度在变。
+   *
+   * 英文/数字按"词"成组，避免 C-01、1D6 被拆断在行尾。
    */
   private async typeInto(container: HTMLElement, text: string, g: number): Promise<void> {
-    const box = document.createElement('div')
-    box.className = 'textbox'
+    const reveal = document.createElement('span')
+    reveal.className = 'reveal'
+    reveal.setAttribute('aria-hidden', 'true')
+    container.setAttribute('aria-label', text)
 
-    const ghost = document.createElement('span')
-    ghost.className = 'ghost'
-    ghost.setAttribute('aria-hidden', 'true')
-    ghost.textContent = text || ' '
-
-    const typed = document.createElement('span')
-    typed.className = 'typed'
-    const caret = document.createElement('i')
-    caret.className = 'caret'
-    typed.append(caret)
-
-    box.append(ghost, typed)
-    container.append(box)
-
-    const cps = Math.max(10, 34 * this.speed)
-    const step = Math.max(1, Math.round(cps / 50))
-    let i = 0
-    while (i < text.length) {
-      if (!this.alive(g)) return
-      i = Math.min(text.length, i + step)
-      typed.textContent = text.slice(0, i)
-      typed.append(caret)
-      await this.sleep((1000 / cps) * step, g)
+    const spans: HTMLSpanElement[] = []
+    for (const unit of splitUnits(text)) {
+      const s = document.createElement('span')
+      s.className = 'ch'
+      s.textContent = unit
+      reveal.append(s)
+      spans.push(s)
     }
-    caret.remove()
-    typed.textContent = text
+    container.append(reveal)
+
+    const per = 1000 / Math.max(10, 34 * this.speed)
+    for (let i = 0; i < spans.length; i++) {
+      if (!this.alive(g)) return
+      spans[i].classList.add('on')
+      await this.sleep(per, g)
+    }
   }
 
   private async hold(ev: ReplayEvent, g: number) {
@@ -801,6 +795,20 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string): HTMLEle
   const n = document.createElement(tag)
   if (cls) n.className = cls
   return n
+}
+
+/**
+ * 把文本切成「逐字显现」的单位：
+ *   - 中文/标点：一个字一个单位
+ *   - 英文、数字：整词一个单位（避免 C-01、1D6 被拆到两行）
+ *   - 空白/换行：各自独立
+ */
+function splitUnits(text: string): string[] {
+  const out: string[] = []
+  const re = /[A-Za-z0-9][A-Za-z0-9'’._\-]*|\r?\n|\s+|[\s\S]/gu
+  let m: RegExpExecArray | null
+  while ((m = re.exec(text)) !== null) out.push(m[0])
+  return out
 }
 
 function btn(role: string, html: string, onClick: () => void): HTMLButtonElement {

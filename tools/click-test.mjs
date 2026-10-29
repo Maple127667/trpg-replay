@@ -68,51 +68,52 @@ try {
   const after = await seqOf()
   ok(after >= before + 2 - 1, `快速连点两次至少前进一条（${before} -> ${after}）`)
 
-  // ---- 2. 打字机排版稳定性
+  // ---- 2. 逐字显现时的排版稳定性
   await page.evaluate(() => {
     const el = document.querySelector('trpg-replay')
-    el.seek(9) // 一条 60+ 字、会折成 2-3 行的旁白
+    el.seek(9) // 60+ 字、会折成 2 行以上的旁白
   })
   const samples = []
   for (let i = 0; i < 40; i++) {
-    await new Promise((r) => setTimeout(r, 80))
+    await new Promise((r) => setTimeout(r, 70))
     const box = await page.evaluate(() => {
       const root = document.querySelector('trpg-replay').shadowRoot
       const n = root.querySelector('.narration')
-      const g = root.querySelector('.ghost')
-      const t = root.querySelector('.typed')
-      if (!n || !g || !t) return null
+      const chars = root.querySelectorAll('.narration .ch')
+      if (!n || !chars.length) return null
       const rn = n.getBoundingClientRect()
-      const rg = g.getBoundingClientRect()
-      const rt = t.getBoundingClientRect()
+      const first = chars[0].getBoundingClientRect()
+      const last = chars[chars.length - 1].getBoundingClientRect()
       return {
         top: Math.round(rn.top),
         h: Math.round(rn.height),
-        ghostW: Math.round(rg.width),
-        typedW: Math.round(rt.width),
-        ghostLines: Math.round(rg.height),
-        typedLines: Math.round(rt.height),
+        w: Math.round(rn.width),
+        firstLeft: Math.round(first.left),
+        firstTop: Math.round(first.top),
+        lastLeft: Math.round(last.left),
+        lastTop: Math.round(last.top),
+        total: chars.length,
+        on: root.querySelectorAll('.narration .ch.on').length,
       }
     })
     if (box) samples.push(box)
   }
-  const tops = samples.map((s) => s.top)
-  const spread = Math.max(...tops) - Math.min(...tops)
-  ok(samples.length > 10, `采集到 ${samples.length} 帧旁白布局`)
-  ok(spread <= 2, `旁白顶边在打字过程中稳定（波动 ${spread}px）`)
 
-  // 关键：ghost 与 typed 必须共用同一个内容盒，否则换行点不同、打完整段会重排
-  const widthMismatch = samples.filter((s) => s.ghostW !== s.typedW)
-  ok(widthMismatch.length === 0,
-    `ghost/typed 行宽一致（${samples[0]?.ghostW}px vs ${samples[0]?.typedW}px，不一致帧 ${widthMismatch.length}）`)
+  ok(samples.length > 10, `采集到 ${samples.length} 帧`)
+  ok(samples.at(-1).on === samples.at(-1).total, `字符逐字点亮完成（${samples.at(-1).on}/${samples.at(-1).total}）`)
+  ok(samples[0].on < samples.at(-1).on, '确实是逐个出现，不是一次性全出')
 
-  // 打字过程中的高度绝不能超过最终高度，否则说明中途多折了一行
-  const overRun = samples.filter((s) => s.typedLines > s.ghostLines + 1)
-  ok(overRun.length === 0,
-    `中途高度不超过最终高度（最多 ${Math.max(...samples.map((s) => s.typedLines))}px / 最终 ${Math.max(...samples.map((s) => s.ghostLines))}px）`)
-
-  const last = samples[samples.length - 1]
-  ok(last.typedLines === last.ghostLines, `打完后高度与 ghost 对齐（${last.typedLines} / ${last.ghostLines}）`)
+  const cmp = (k) => {
+    const vals = samples.map((s) => s[k])
+    return Math.max(...vals) - Math.min(...vals)
+  }
+  ok(cmp('top') === 0, `旁白块顶边恒定（波动 ${cmp('top')}px）`)
+  ok(cmp('h') === 0, `旁白块高度恒定（波动 ${cmp('h')}px）`)
+  ok(cmp('firstLeft') === 0, `首字横向位置恒定（波动 ${cmp('firstLeft')}px）`)
+  ok(cmp('firstTop') === 0, `首字纵向位置恒定（波动 ${cmp('firstTop')}px）`)
+  ok(cmp('lastLeft') === 0, `末字横向位置恒定（波动 ${cmp('lastLeft')}px）`)
+  ok(cmp('lastTop') === 0, `末字纵向位置恒定（波动 ${cmp('lastTop')}px）`)
+  ok(cmp('total') === 0, `字符节点数恒定（${samples[0].total} 个）`)
 
   if (errors.length) fail.push('页面报错：' + errors.join(' | '))
   ok(errors.length === 0, '无运行时报错')
