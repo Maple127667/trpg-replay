@@ -7,16 +7,10 @@ export interface PlayerOptions {
   assets?: ArtAssets
 }
 
-/** 角色站位与配色。原 log 没有这些信息，属于表现层配置。 */
-const SLOT: Record<string, 'left' | 'right' | 'center'> = {
-  liangyan: 'left',
-  wenkele: 'right',
-  jessica: 'right',
-  sisyphus: 'left',
-  angelo: 'center',
-  maple: 'center',
-}
+/** 同屏最多站几个人；超过就把最久没说话的那位请下台。 */
+const MAX_CAST = 3
 
+/** 占位立绘配色（没有真图时用）。 */
 const PALETTE: Record<string, [string, string]> = {
   liangyan: ['#3d4a5c', '#151a22'],
   wenkele: ['#5c4a3d', '#221a15'],
@@ -92,6 +86,7 @@ export class Player {
   private timer: number | null = null
   private wake: (() => void) | null = null
   private san: Record<string, { cur: number; max: number }> = {}
+  private onStage: string[] = []
   private currentScene = -1
   private scale = 1
 
@@ -188,7 +183,7 @@ export class Player {
     this.rebuildVisible()
     const idx = this.visible.findIndex((e) => e.seq >= anchorSeq)
     this.pause()
-    this.presentIndex(idx < 0 ? this.visible.length - 1 : idx)
+    this.presentIndex(idx < 0 ? this.visible.length - 1 : idx, true)
     this.syncButtons()
   }
 
@@ -202,13 +197,13 @@ export class Player {
     const target = this.visible.findIndex((e) => e.scene === index)
     if (target < 0) return
     this.showScene(index, false)
-    this.presentIndex(target)
+    this.presentIndex(target, true)
   }
 
   seek(seq: number) {
     this.pause()
     const idx = this.visible.findIndex((e) => e.seq >= seq)
-    this.presentIndex(idx < 0 ? this.visible.length - 1 : idx)
+    this.presentIndex(idx < 0 ? this.visible.length - 1 : idx, true)
   }
 
   /* ------------------------------------------------------------ 播放循环 */
@@ -245,13 +240,41 @@ export class Player {
    * 渲染单条并停住。索引**同步**落到 this.i，避免上一次渲染还在 await 时
    * 连点「下一句」算出同一个目标（表现为点两次才前进一条）。
    */
-  private presentIndex(index: number) {
+  private presentIndex(index: number, rebuildCast = false) {
     if (!this.visible.length) return
     const target = Math.max(0, Math.min(index, this.visible.length - 1))
     const g = ++this.gen
     this.i = target
     this.updateProgress()
+    if (rebuildCast) this.restoreCast(target)
     void this.present(this.visible[target], g)
+  }
+
+  /**
+   * 跳转时重建台上人物：往前找最近发言的几位，保证"我拖到第 300 条"看到的
+   * 同屏人物和一路播过来是一样的，而不是只剩当前说话人一个。
+   */
+  private restoreCast(index: number) {
+    const scene = this.visible[index]?.scene
+    const picked: string[] = []
+    for (let i = index; i >= 0 && picked.length < MAX_CAST; i--) {
+      const e = this.visible[i]
+      if (e.scene !== scene) break
+      if (e.type !== 'dialogue' && e.type !== 'thought') continue
+      if (e.channel === 'radio') continue
+      const c = this.castById.get(e.speaker)
+      if (!c || c.role === 'kp' || picked.includes(e.speaker)) continue
+      picked.unshift(e.speaker)
+    }
+    this.castEl.replaceChildren()
+    this.onStage = []
+    for (const id of picked) this.spawnChar(id)
+    this.onStage = picked
+    this.layoutCast()
+    const current = this.visible[index]?.speaker
+    for (const n of Array.from(this.castEl.querySelectorAll<HTMLElement>('.char'))) {
+      n.classList.toggle('active', n.dataset.id === current)
+    }
   }
 
   private async present(ev: ReplayEvent, g: number) {
@@ -347,7 +370,9 @@ export class Player {
   }
 
   private async presentSpeech(ev: ReplayEvent, g: number) {
-    this.highlight(ev.speaker)
+    // 无线电只出声不出人：对讲机/广播里的角色不该出现在画面上
+    if (ev.channel === 'radio') this.dimCast(true)
+    else this.highlight(ev.speaker)
     const bubble = el('div', 'bubble' + (ev.type === 'thought' ? ' thought' : '') + (ev.channel === 'radio' ? ' radio' : ''))
     const name = el('div', 'bubble-name')
     const cast = this.castById.get(ev.speaker)
@@ -526,24 +551,52 @@ export class Player {
   }
 
   private highlight(id: string) {
-    const slot = SLOT[id]
     const cast = this.castById.get(id)
-    if (!cast || cast.role === 'kp' || !slot) return
-    // 只保留当前说话人与另一位主要角色
-    for (const node of Array.from(this.castEl.querySelectorAll<HTMLElement>('.char'))) {
-      node.classList.toggle('active', node.dataset.id === id)
+    if (!cast || cast.role === 'kp') return
+
+    let node = this.castEl.querySelector<HTMLElement>(`.char[data-id="${id}"]`)
+    if (!node) node = this.spawnChar(id)
+    node.classList.add('show')
+
+    // 记住谁在台上，最近说话的人排最后；超过上限就把最早的那位请下去
+    this.onStage = this.onStage.filter((x) => x !== id)
+    this.onStage.push(id)
+    while (this.onStage.length > MAX_CAST) {
+      const dropped = this.onStage.shift() as string
+      this.castEl.querySelector(`.char[data-id="${dropped}"]`)?.remove()
     }
-    if (!this.castEl.querySelector(`.char[data-id="${id}"]`)) this.spawnChar(id, slot)
+    this.layoutCast()
+
+    for (const n of Array.from(this.castEl.querySelectorAll<HTMLElement>('.char'))) {
+      n.classList.toggle('active', n.dataset.id === id)
+    }
   }
 
-  private spawnChar(id: string, slot: 'left' | 'right' | 'center') {
+  /** 按台上人数均分站位：1 人居中、2 人左右、3 人三等分。 */
+  private layoutCast() {
+    const n = this.onStage.length
+    const xs = n <= 1 ? [50] : n === 2 ? [30, 70] : [17, 50, 83]
+    const shrink = n >= 3 ? 0.84 : 1
+    this.onStage.forEach((id, i) => {
+      const node = this.castEl.querySelector<HTMLElement>(`.char[data-id="${id}"]`)
+      if (!node) return
+      node.style.setProperty('--x', `${xs[i] ?? 50}%`)
+      node.style.setProperty('--s', String(shrink))
+      node.style.zIndex = String(10 + i)
+    })
+  }
+
+  private spawnChar(id: string): HTMLElement {
     const node = el('div', 'char') as HTMLDivElement
     node.dataset.id = id
-    node.dataset.slot = slot
-    const url = this.options.assets?.characters?.[id]?.default
-    if (url) {
+
+    const art = this.options.assets?.characters?.[id]
+    node.style.setProperty('--cs', String(art?.scale ?? 1))
+    node.style.setProperty('--cy', `${art?.y ?? 0}px`)
+
+    if (art?.default) {
       const img = document.createElement('img')
-      img.src = url
+      img.src = art.default
       img.alt = this.nameOf(id)
       node.append(img)
     } else {
@@ -553,13 +606,13 @@ export class Player {
       ph.style.setProperty('--c2', c2)
       const b = document.createElement('b')
       b.textContent = this.nameOf(id).slice(0, 1)
-      const s = document.createElement('span')
-      s.textContent = this.nameOf(id)
-      ph.append(b, s)
+      ph.append(b)
       node.append(ph)
     }
     this.castEl.append(node)
+    this.stage.classList.add('has-cast')
     requestAnimationFrame(() => node.classList.add('show'))
+    return node
   }
 
   /* ------------------------------------------------------------ HUD / SAN */
@@ -644,7 +697,7 @@ export class Player {
       const ratio = (e.clientX - r.left) / r.width
       const idx = Math.round(ratio * (this.visible.length - 1))
       this.pause()
-      this.presentIndex(Math.max(0, Math.min(idx, this.visible.length - 1)))
+      this.presentIndex(Math.max(0, Math.min(idx, this.visible.length - 1)), true)
     })
 
     this.chapterMenu = el('div', 'chapters')

@@ -1,10 +1,16 @@
 {
-  "$comment": "美术资源清单。scenes 的 key 是 replay.json 里的 scene 序号；characters 的 key 是角色 id，内部按表情名索引，default 为兜底。缺图时播放器自动退回内置占位。",
+  "$comment": "美术资源清单。scenes 的 key 是 replay.json 里的 scene 序号；characters 的 key 是角色 id。scale/y 用于把不同取景的立绘对齐（半身、胸像需要缩小）。",
   "scenes": {
     "0": "/art/bg/scene-01-rig-overview.png",
     "1": "/art/bg/scene-02-corridor.jpg",
     "2": "/art/bg/scene-03-dorm.jpg",
     "3": "/art/bg/scene-04-server-room.jpg"
   },
-  "characters": {}
+  "characters": {
+    "liangyan": { "default": "/art/char/liangyan-neutral.png", "scale": 0.72, "y": 40 },
+    "wenkele":  { "default": "/art/char/wenkele-neutral.png",  "scale": 0.5, "y": 55 },
+    "sisyphus": { "default": "/art/char/sisyphus-neutral.png" },
+    "jessica":  { "default": "/art/char/jessica-neutral.png" },
+    "angelo":   { "default": "/art/char/angelo-neutral.png" }
+  }
 }

@@ -47,6 +47,7 @@ export const STYLE = /* css */ `
   transition: opacity 900ms ease, filter 900ms ease;
   will-change: opacity;
 }
+.stage.has-cast .bg { filter: brightness(.7) saturate(.9); }
 .bg.bg-next { opacity: 0; }
 .bg.bg-next.in { opacity: 1; }
 
@@ -77,24 +78,32 @@ export const STYLE = /* css */ `
 .char {
   position: absolute;
   bottom: 0;
-  width: 560px;
-  height: 660px;
+  left: var(--x, 50%);
+  width: 600px;
+  height: 700px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   opacity: 0;
-  transform: translateY(14px) scale(.99);
-  transition: opacity 420ms ease, transform 420ms ease, filter 420ms ease;
-  filter: saturate(.85) brightness(.82);
+  transform-origin: 50% 100%;
+  transform: translateX(-50%) translateY(calc(14px + var(--cy, 0px))) scale(calc(var(--s, 1) * var(--cs, 1) * .99));
+  transition: opacity 420ms ease, transform 420ms ease, filter 420ms ease,
+              left 480ms cubic-bezier(.2,.8,.2,1);
+  filter: saturate(.8) brightness(.62);
 }
-.char.show { opacity: 1; transform: translateY(0) scale(1); }
-.char.active { filter: saturate(1) brightness(1); }
-.char[data-slot="left"]   { left: -30px; }
-.char[data-slot="right"]  { right: -30px; }
-.char[data-slot="center"] { left: 50%; transform: translateX(-50%) translateY(14px); }
-.char[data-slot="center"].show { transform: translateX(-50%) translateY(0); }
+.char.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(var(--cy, 0px)) scale(calc(var(--s, 1) * var(--cs, 1)));
+}
+.char.active { filter: saturate(1) brightness(1.02); }
 
-.char img { max-height: 100%; max-width: 100%; object-fit: contain; }
+.char img {
+  height: 100%;
+  width: auto;
+  max-width: none;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 44px rgba(0,0,0,.55));
+}
 
 .char .ph {
   width: 270px;

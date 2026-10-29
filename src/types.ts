@@ -97,12 +97,22 @@ export interface ReplayDoc {
   anomalies?: Record<string, unknown>
 }
 
+/** 单个角色的立绘配置：表情名 -> 图片，外加可选的缩放/位移微调。 */
+export interface CharArt {
+  default?: string
+  /** 统一基准下的额外缩放。半身像/胸像需要缩小才能和全身像对上比例。 */
+  scale?: number
+  /** 垂直微调（舞台像素，正数向下）。 */
+  y?: number
+  [expr: string]: string | number | undefined
+}
+
 /** 可选的美术资源清单（assets.json）。缺省时播放器使用内置占位图。 */
 export interface ArtAssets {
   /** 场景序号 -> 背景图 URL */
   scenes?: Record<string, string>
-  /** 角色 id -> { default, 表情名 } -> 立绘 URL */
-  characters?: Record<string, Record<string, string>>
+  /** 角色 id -> 立绘配置 */
+  characters?: Record<string, CharArt>
   /** 预留：BGM / 音效 */
   bgm?: Record<string, string>
 }

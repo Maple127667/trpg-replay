@@ -133,11 +133,15 @@ React 里直接当自定义元素用（React 19 原生支持）：
     "3": "/art/bg/scene-04-server-room.jpg"
   },
   "characters": {
-    "liangyan": { "default": "/art/char/liangyan-neutral.png",
-                  "smile":   "/art/char/liangyan-smile.png" }
+    "liangyan": { "default": "/art/char/liangyan-neutral.png", "scale": 0.72, "y": 40 },
+    "wenkele":  { "default": "/art/char/wenkele-neutral.png",  "scale": 0.50, "y": 55 },
+    "jessica":  { "default": "/art/char/jessica-neutral.png" }
   }
 }
 ```
+
+`scale` / `y` 用来把取景不一致的立绘对齐：全身像用 1.0，半身像约 0.7，胸像约 0.5。
+`default` 是兜底表情，之后可以按 `smile` / `fear` 这类 key 加差分。
 
 | 幕 | seq | 场景 | 背景文件 |
 |---|---|---|---|
@@ -145,6 +149,9 @@ React 里直接当自定义元素用（React 19 原生支持）：
 | 02 | 101–106 | 生活层 · 走廊 | `scene-02-corridor.jpg` |
 | 03 | 107–170 | C-01 宿舍 | `scene-03-dorm.jpg` |
 | 04 | 171–290 | 工程层 · 服务器控制室 | `scene-04-server-room.jpg` |
+
+立绘原始文件放 `art/char/raw/`，跑 `python tools/prepare_characters.py` 会统一成
+600×700 的透明 PNG（已经抠好的图会自动跳过清底步骤）。
 
 背景 1920×1080 以上（16:9），立绘 1200×1800 透明 PNG。缺图时自动退回渐变占位，
 所以可以一张一张补，随时能跑。
