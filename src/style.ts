@@ -73,32 +73,34 @@ export const STYLE = /* css */ `
 }
 
 /* ---------------------------------------------------------------- 立绘 */
-.cast { position: absolute; inset: 0; pointer-events: none; }
+/* 立绘层必须自成一个层叠上下文，否则子元素的 z-index 会跑到文字层上面去 */
+.cast { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
 
 .char {
   position: absolute;
-  bottom: 0;
+  top: 40%;
   left: var(--x, 50%);
   width: 600px;
-  height: 700px;
+  height: 60%;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
+  overflow: hidden;
   opacity: 0;
-  transform-origin: 50% 100%;
-  transform: translateX(-50%) translateY(calc(14px + var(--cy, 0px))) scale(calc(var(--s, 1) * var(--cs, 1) * .99));
+  transform-origin: 50% 0;
+  transform: translateX(-50%) translateY(calc(14px + var(--cy, 0px)));
   transition: opacity 420ms ease, transform 420ms ease, filter 420ms ease,
               left 480ms cubic-bezier(.2,.8,.2,1);
   filter: saturate(.8) brightness(.62);
 }
 .char.show {
   opacity: 1;
-  transform: translateX(-50%) translateY(var(--cy, 0px)) scale(calc(var(--s, 1) * var(--cs, 1)));
+  transform: translateX(-50%) translateY(var(--cy, 0px));
 }
 .char.active { filter: saturate(1) brightness(1.02); }
 
 .char img {
-  height: 100%;
+  height: calc(700px * var(--cs, 1));
   width: auto;
   max-width: none;
   object-fit: contain;
@@ -210,6 +212,17 @@ export const STYLE = /* css */ `
 }
 .narration .seg.on { opacity: 1; }
 .narration .seg.lead { color: #dfe6f0; }
+
+/* 有立绘在场时，旁白改成实底卡片——文字永远压在人物之上，不给人挡字的机会 */
+.stage.has-cast .narration,
+.stage.has-cast .action {
+  margin-bottom: 58px;
+  padding: 26px 46px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(11,15,21,.93), rgba(7,10,14,.96));
+  box-shadow: 0 24px 70px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.05);
+  text-shadow: none;
+}
 .narration .seg i {
   font-style: normal;
   color: var(--accent);
@@ -243,10 +256,10 @@ export const STYLE = /* css */ `
   margin: 0 66px 58px;
   padding: 22px 34px 26px;
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(14,18,25,.90), rgba(9,12,17,.95));
+  background: linear-gradient(180deg, rgba(13,17,24,.985), rgba(7,10,15,.995));
   border: 1px solid rgba(255,255,255,.10);
   box-shadow: 0 24px 70px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.07);
-  backdrop-filter: blur(10px);
+  backdrop-filter: none;
   animation: rise 380ms cubic-bezier(.2,.8,.2,1) both;
 }
 .bubble::before {

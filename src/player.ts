@@ -87,6 +87,8 @@ export class Player {
   private wake: (() => void) | null = null
   private san: Record<string, { cur: number; max: number }> = {}
   private onStage: string[] = []
+  private lastSpoke = new Map<string, number>()
+  private speakTick = 0
   private currentScene = -1
   private scale = 1
 
@@ -267,9 +269,12 @@ export class Player {
       picked.unshift(e.speaker)
     }
     this.castEl.replaceChildren()
-    this.onStage = []
-    for (const id of picked) this.spawnChar(id)
-    this.onStage = picked
+    this.onStage = [...picked]
+    this.lastSpoke.clear()
+    for (const id of picked) {
+      this.spawnChar(id)
+      this.lastSpoke.set(id, ++this.speakTick)
+    }
     this.layoutCast()
     const current = this.visible[index]?.speaker
     for (const n of Array.from(this.castEl.querySelectorAll<HTMLElement>('.char'))) {
@@ -558,30 +563,35 @@ export class Player {
     if (!node) node = this.spawnChar(id)
     node.classList.add('show')
 
-    // 记住谁在台上，最近说话的人排最后；超过上限就把最早的那位请下去
-    this.onStage = this.onStage.filter((x) => x !== id)
-    this.onStage.push(id)
-    while (this.onStage.length > MAX_CAST) {
-      const dropped = this.onStage.shift() as string
-      this.castEl.querySelector(`.char[data-id="${dropped}"]`)?.remove()
+    this.lastSpoke.set(id, ++this.speakTick)
+    if (!this.onStage.includes(id)) {
+      // 站位按"首次登场顺序"固定，换说话人不会换边；满了就请走最久没说话的
+      if (this.onStage.length >= MAX_CAST) {
+        let victim = this.onStage[0]
+        for (const other of this.onStage) {
+          if ((this.lastSpoke.get(other) ?? 0) < (this.lastSpoke.get(victim) ?? 0)) victim = other
+        }
+        this.onStage = this.onStage.filter((x) => x !== victim)
+        this.lastSpoke.delete(victim)
+        this.castEl.querySelector(`.char[data-id="${victim}"]`)?.remove()
+      }
+      this.onStage.push(id)
+      this.layoutCast()
     }
-    this.layoutCast()
 
     for (const n of Array.from(this.castEl.querySelectorAll<HTMLElement>('.char'))) {
       n.classList.toggle('active', n.dataset.id === id)
     }
   }
 
-  /** 按台上人数均分站位：1 人居中、2 人左右、3 人三等分。 */
+  /** 按登场顺序均分站位：1 人居中、2 人左右、3 人三分。位置只增不减，不因说话而换边。 */
   private layoutCast() {
     const n = this.onStage.length
     const xs = n <= 1 ? [50] : n === 2 ? [30, 70] : [17, 50, 83]
-    const shrink = n >= 3 ? 0.84 : 1
     this.onStage.forEach((id, i) => {
       const node = this.castEl.querySelector<HTMLElement>(`.char[data-id="${id}"]`)
       if (!node) return
       node.style.setProperty('--x', `${xs[i] ?? 50}%`)
-      node.style.setProperty('--s', String(shrink))
       node.style.zIndex = String(10 + i)
     })
   }
