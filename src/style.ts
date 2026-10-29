@@ -97,18 +97,19 @@ export const STYLE = /* css */ `
 .char img { max-height: 100%; max-width: 100%; object-fit: contain; }
 
 .char .ph {
-  width: 300px;
-  height: 430px;
-  padding-top: 74px;
+  width: 270px;
+  height: 390px;
+  padding-top: 66px;
   border-radius: 160px 160px 24px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   gap: 10px;
-  border: 1px solid rgba(255,255,255,.14);
+  border: 1px dashed rgba(255,255,255,.22);
   background: linear-gradient(160deg, var(--c1, #2a3140), var(--c2, #11151c));
-  box-shadow: 0 30px 80px rgba(0,0,0,.55), inset 0 0 60px rgba(255,255,255,.05);
+  box-shadow: 0 30px 80px rgba(0,0,0,.45), inset 0 0 60px rgba(255,255,255,.04);
+  opacity: .55;
 }
 .char .ph b {
   font-family: var(--serif);

@@ -12,8 +12,9 @@
 - [x] 掷骰解析：理智检定 / 技能检定 / 奖励惩罚骰 / 暗骰 四种格式全部结构化
 - [x] 场景切分、角色表、旁白归属异常检测
 - [x] 播放器骨架：`<trpg-replay>` Web Component（16:9、Shadow DOM）
-- [x] 打字机、场景卡、掷骰卡、SAN 血条、私密旁白标记、上帝视角开关
-- [ ] 真美术接入（背景 / 立绘 / 表情差分）
+- [x] 逐字显现、场景卡、掷骰卡、SAN 血条、私密旁白标记、上帝视角开关
+- [x] 背景美术接入：4 幕各一张，交叉溶解切换
+- [ ] 立绘与表情差分（`assets.json` 接口已就绪）
 - [ ] BGM 与音效
 - [ ] 打包产物入库 + jsDelivr 分发
 
@@ -22,19 +23,24 @@
 ```
 src/
   index.ts      <trpg-replay> 自定义元素（属性 / 方法 / 事件）
-  player.ts     播放引擎：时间轴、打字机、场景、掷骰、SAN
+  player.ts     播放引擎：时间轴、逐字显现、场景、掷骰、SAN
   style.ts      Shadow DOM 内的全部样式
   types.ts      replay.json 与 assets.json 的类型
+art/
+  bg/           背景图（4 幕）
+  char/         立绘（待补）
 demo/
   index.html    本地验证页
   main.ts       demo 引导（?seq= / ?god= / ?speed=）
 tools/
   inspect_log.py   一次性统计：log 里有什么、有什么坑
   build_replay.py  正式解析器：原始 log → data/replay.json
+  asset_plan.py    统计背景切换点与每个角色的表情线索
   snapshot.mjs     本地验证：无头 Chrome 截图 + 导出 Shadow DOM
-  debug-page.mjs   挂载排查
+  click-test.mjs   交互回归：连点/布局稳定性
 data/
   replay.json   回放脚本（播放器唯一的输入）
+  assets.json   美术资源映射（背景 / 立绘差分）
 docs/
   preview-*.png 效果截图
 ```
@@ -100,7 +106,7 @@ React 里直接当自定义元素用（React 19 原生支持）：
   "schema": "trpg-replay/1",
   "meta":   { "title": "北海九号", "startedAt": "…", "durationSeconds": 18484 },
   "cast":   [ { "id": "liangyan", "name": "梁琰", "role": "pc", "count": 96 } ],
-  "scenes": [ { "index": 0, "label": "甲板层 · 起雾", "startSeq": 3, "endSeq": 100 } ],
+  "scenes": [ { "index": 0, "label": "北海九号 · 甲板层", "startSeq": 3, "endSeq": 100 } ],
   "events": [
     { "seq": 15, "type": "dialogue", "speaker": "wenkele", "text": "…", "ms": 4200 },
     { "seq": 69, "type": "check",    "speaker": "liangyan",
@@ -116,19 +122,32 @@ React 里直接当自定义元素用（React 19 原生支持）：
 
 ## 素材接口
 
-美术就位后加一个 `assets.json`，不用改代码：
+美术资源全部由 `data/assets.json` 驱动，换图不用改代码：
 
 ```jsonc
 {
-  "scenes": { "0": "/art/deck-fog.webp", "3": "/art/server-room.webp" },
+  "scenes": {
+    "0": "/art/bg/scene-01-rig-overview.png",
+    "1": "/art/bg/scene-02-corridor.jpg",
+    "2": "/art/bg/scene-03-dorm.jpg",
+    "3": "/art/bg/scene-04-server-room.jpg"
+  },
   "characters": {
-    "liangyan": { "default": "/art/liangyan.webp" },
-    "wenkele":  { "default": "/art/wenkele.webp" }
+    "liangyan": { "default": "/art/char/liangyan-neutral.png",
+                  "smile":   "/art/char/liangyan-smile.png" }
   }
 }
 ```
 
-立绘建议 1200×1800 透明 PNG，背景 1920×1080。缺图时播放器自动退回渐变占位。
+| 幕 | seq | 场景 | 背景文件 |
+|---|---|---|---|
+| 01 | 3–100 | 北海九号 · 甲板层 | `scene-01-rig-overview.png` |
+| 02 | 101–106 | 生活层 · 走廊 | `scene-02-corridor.jpg` |
+| 03 | 107–170 | C-01 宿舍 | `scene-03-dorm.jpg` |
+| 04 | 171–290 | 工程层 · 服务器控制室 | `scene-04-server-room.jpg` |
+
+背景 1920×1080 以上（16:9），立绘 1200×1800 透明 PNG。缺图时自动退回渐变占位，
+所以可以一张一张补，随时能跑。
 
 ## 重新解析日志
 
