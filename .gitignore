@@ -11,6 +11,7 @@ dist/
 
 # 本地临时文件
 .tools/
+.tmp/
 *.log
 Thumbs.db
 desktop.ini
