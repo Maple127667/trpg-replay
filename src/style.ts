@@ -267,15 +267,18 @@ export const STYLE = /* css */ `
   min-height: 1.85em;
 }
 
-/* 打字机排版锚点：ghost 先把最终文本排好占位，typed 绝对定位叠上去逐字显现。
-   没有它的话，每换一行整段文字都会往上跳一次。 */
-.ghost {
-  display: block;
-  visibility: hidden;
+/* 打字机排版锚点：ghost 先把最终文本排好占位，typed 叠在同一个网格单元里逐字显现。
+   两者必须共用同一个内容盒——所以用 grid 叠放，不能用绝对定位：绝对定位贴的是
+   padding 边，会吃掉容器的左右内边距，行宽一变换行点就变，打完整段会重排跳动。 */
+.textbox {
+  display: grid;
 }
-.typed {
-  position: absolute;
-  inset: 0;
+.textbox > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+.ghost {
+  visibility: hidden;
 }
 .bubble-text .caret {
   display: inline-block;

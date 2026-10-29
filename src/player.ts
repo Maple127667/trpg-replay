@@ -716,16 +716,22 @@ export class Player {
    * 整体位移一次，看起来像画面在抖。
    */
   private async typeInto(container: HTMLElement, text: string, g: number): Promise<void> {
+    const box = document.createElement('div')
+    box.className = 'textbox'
+
     const ghost = document.createElement('span')
     ghost.className = 'ghost'
     ghost.setAttribute('aria-hidden', 'true')
     ghost.textContent = text || ' '
+
     const typed = document.createElement('span')
     typed.className = 'typed'
     const caret = document.createElement('i')
     caret.className = 'caret'
     typed.append(caret)
-    container.append(ghost, typed)
+
+    box.append(ghost, typed)
+    container.append(box)
 
     const cps = Math.max(10, 34 * this.speed)
     const step = Math.max(1, Math.round(cps / 50))
