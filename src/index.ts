@@ -80,11 +80,19 @@ export class TrpgReplayElement extends HTMLElement {
 
   private async boot() {
     try {
-      const doc = this.data ?? (await this.load<ReplayDoc>(this.getAttribute('src')))
+      // 框架（React/Vue）对自定义元素会把未知 prop 直接赋成 property，
+      // 所以 data / assets 既可能是对象，也可能是 URL 字符串，两种都认。
+      const inlineData = this.data
+      const doc = typeof inlineData === 'string'
+        ? await this.load<ReplayDoc>(inlineData)
+        : inlineData ?? (await this.load<ReplayDoc>(this.getAttribute('src')))
       if (!doc) throw new Error('trpg-replay: 缺少 src 或 data')
 
       const assetsAttr = this.getAttribute('assets')
-      const assets = this.assets ?? (assetsAttr ? await this.load<ArtAssets>(assetsAttr) : undefined)
+      const inlineAssets = this.assets
+      const assets = typeof inlineAssets === 'string'
+        ? await this.load<ArtAssets>(inlineAssets)
+        : inlineAssets ?? (assetsAttr ? await this.load<ArtAssets>(assetsAttr) : undefined)
 
       const opts: PlayerOptions = {
         god: this.boolAttr('god'),
